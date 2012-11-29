@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 
 /**
@@ -14,6 +15,7 @@ public class Verkefni3 {
     public ArrayList file;
     public int noAgents;
     public int noTasks;
+    public static Population pop;
 
     public ArrayList<Integer> dataBuffer;
     public ArrayList<Integer> constraints;
@@ -48,7 +50,6 @@ public class Verkefni3 {
 
                 dataBuffer.add((Integer.parseInt(integer)));
             }
-
         }
         // System.out.println( integers[11] );
         noAgents = dataBuffer.get(0);
@@ -98,38 +99,85 @@ public class Verkefni3 {
         System.out.println();
     }
 
-
+    public int random(int lower, int upper)
+    {
+        Random random = new Random();
+        int r = random.nextInt(upper);
+        if (r < lower)return random(lower, upper);
+        else return r;
+    }
     public ArrayList<Integer> Sum(int[][]  matrix, int noAgents, int noTasks){
         int sum = 0 ;
         ArrayList<Integer> sumMatrix = new ArrayList<Integer>();
         for(int i = 0 ; i < noAgents ; i++){
-              for( int k = 0; k < noTasks; k++){
-                 // System.out.println("Cost matrix : "+ matrix[i][k] );
-                  sum += matrix[i][k];
-              }
-           sumMatrix.add(sum);
-           sum = 0;
-       }
-      return sumMatrix;
+            for( int k = 0; k < noTasks; k++){
+                // System.out.println("Cost matrix : "+ matrix[i][k] );
+                sum += matrix[i][k];
+            }
+            sumMatrix.add(sum);
+            sum = 0;
+        }
+        return sumMatrix;
     }
+
+    public void Init(){
+        pop = new Population(100);
+        for(int i = 0; i < 100; i++) {
+            Chromasome chrome = new Chromasome(noTasks,noAgents);
+            // chr.randomize(problem);
+            // chr.evaluate(problem);
+            // chr.Repair(problem);
+            // chr.evaluate(problem);
+            // updateMetrics(chr);
+            pop.AddChromasome(chrome);
+        }
+        //  selection = new MySelection(selectChance);
+        //  crossover = new MyCrossover();
+        //  mutate = new MyMutate(mutateChance);
+    }
+
 
     public static void main(String[] args) {
 
         Verkefni3 v3 = new Verkefni3();
 
-        ArrayList<Integer> sum = v3.Sum(v3.costsMatrix, v3.noAgents,v3.noTasks);
-        for(Integer i : sum){
-            System.out.println("Assignemnt Cost :"+i);
+        v3.Init();
+
+        System.out.println( );
+        System.out.println("Genotypes : ");
+        for(int j = 0 ; j < pop.population.size();j++){
+            //Set the fitness for each chromasone
+            pop.population.get(j).SetFitness(v3.costsMatrix);
         }
+        System.out.println("Now Sorted : ---------------------------------------" );
+        pop.Sort();
+        //Print out current population
+        for(int j = 0 ; j < pop.population.size();j++){
+            for(int i = 0 ; i < pop.population.get(j).size(); i++){
+
+                System.out.print("," + pop.population.get(j).get(i) );
+            }
+            System.out.println("----Fitness:, "+pop.population.get(j).fitnessValue);
+        }
+        // Assignment : 2 ,2 ,1 ,1 ,0 ,1 ,1 ,1 ,2 ,1 ,2 ,1 ,0 ,0 ,1
+        // 64 38 26 36 91 39 91 97 44 61 15 63 57 50 56
+        // 25 28 27 54 58 68 20 96 75 53 49 33 73 47 43
+        // 77 50 66 21 16 38 8 39 89 95 70 104 45 41 53
 
 
 
 
 
 
+        ArrayList<Integer> workLoad = new ArrayList<Integer>();
 
+        System.out.println();
 
+        for(int i = 0 ; i < pop.GetPopSize(); i++){
 
+            System.out.println("Population nr:" +i);
+            pop.population.get(i).Evaluate(workLoad ,v3.noAgents,v3.resourcesMatrix,v3.constraints);
 
+        }
     }
 }

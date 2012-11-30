@@ -19,9 +19,15 @@ public class Chromasome {
         for(int i = 0 ; i < noTasks ; i++ ){
             this.DNAstring.add(this.random(0, noAgents));
         }
+        this.fitnessValue = 0;
         this.feasable = true;
     }
 
+    public Chromasome (int size){
+        DNAstring = new ArrayList<Integer>(size);
+        this.fitnessValue = 0;
+        this.feasable = true;
+    }
     public void SetFitness(int[][] costsMatrix){
         for(int i = 0; i < DNAstring.size()  ; i++){
             //Workload
@@ -55,8 +61,6 @@ public class Chromasome {
         }
 
         if(this.feasable){
-
-
             for(int x = 0 ; x < noAgents ; x++){
                 // Estimate if the workload exceeds the contraints given.
                 System.out.println("Workload :" + workLoad.get(x)+ "----------- Contsraints:" + contstraints.get(x));
@@ -81,11 +85,31 @@ public class Chromasome {
         return DNAstring.get(i);
     }
 
+    public int compareTo(Object o) {
+        return ((Chromasome)o).GetFitness() - this.fitnessValue;
+    }
+
+    public void set(int agent, int newAgent)
+    {
+        DNAstring.set(agent , newAgent);
+    }
+
     public int random(int lower, int upper)
     {
         Random random = new Random();
         int r = random.nextInt(upper);
         if (r < lower)return random(lower, upper);
         else return r;
+    }
+
+    public String toString(){
+        StringBuilder dnaToString = new StringBuilder();
+        for(Integer i : DNAstring) {
+
+            dnaToString.append(i);
+            dnaToString.append(",");
+        }
+        dnaToString.append("Fittness :" + this.fitnessValue);
+        return dnaToString.toString();
     }
 }

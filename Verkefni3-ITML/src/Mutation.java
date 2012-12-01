@@ -15,12 +15,17 @@ public class Mutation {
         this.mutateChance = mutateChance;
     }
 
-    public void mutate(Chromasome chrome) {
+    public void mutate(Chromasome chrome,int noAgents) {
         Random r = new Random();
+        Random r2 = new Random();
+        int randAgent = r2.nextInt(noAgents);
         for(int i = 0; i < chrome.size(); i++) {
             if(r.nextInt(1000) <= mutateChance) {
-                chrome.set(i, (chrome.get(i)==0)?1:0);
+                if(randAgent == chrome.get(i)){
+                    randAgent+=1;
                 }
+                chrome.set(i, randAgent%noAgents);
             }
         }
+    }
 }

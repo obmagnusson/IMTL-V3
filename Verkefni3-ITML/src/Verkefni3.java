@@ -20,9 +20,9 @@ public class Verkefni3 {
     public static Population pop;
 
     public int popSize = 100;
-    public int selectChance = 20;
-    public int elite = 25;
-    public int mutateChance = 5;
+    public int selectChance = 25;
+    public int elite = 10;
+    public int mutateChance = 10;
 
     public Selection selection;
     public Crossover crossover;
@@ -31,6 +31,7 @@ public class Verkefni3 {
 
     public ArrayList<Integer> dataBuffer;
     public ArrayList<Integer> constraints;
+    public ArrayList<Integer> workload;
 
     public int [][] resourcesMatrix;
     public int [][] costsMatrix;
@@ -39,7 +40,7 @@ public class Verkefni3 {
 
         try {
             file = new ArrayList<String>();
-            Scanner sc = new Scanner(new File("D3-15.dat"));
+            Scanner sc = new Scanner(new File("E10-100.dat"));
             while (sc.hasNextLine())    {
                 file.add(sc.nextLine());
             }
@@ -133,15 +134,19 @@ public class Verkefni3 {
     }
 
     public void Init(){
+        workload = new ArrayList<Integer>(noAgents);
         pop = new Population(popSize);
-        for(int i = 0; i < popSize; i++) {
+        while(pop.GetPopSize() < popSize) {
             Chromasome chrome = new Chromasome(noTasks,noAgents);
+            chrome.Evaluate(workload,noAgents,resourcesMatrix,constraints,costsMatrix);
             // chr.randomize(problem);
             // chr.evaluate(problem);
             // chr.Repair(problem);
             // chr.evaluate(problem);
             // updateMetrics(chr);
+            if(chrome.feasable){
             pop.AddChromasome(chrome);
+            }
         }
          selection = new Selection(selectChance);
          crossover = new Crossover();
@@ -156,12 +161,12 @@ public class Verkefni3 {
         v3.Init();
 
         System.out.println( );
-        for(int k = 0 ; k < 5; k++){
+        for(int k = 0 ; k < 50000; k++){
             System.out.println("Generation :"+ k);
         System.out.println("Genotypes : ");
         for(int j = 0 ; j < pop.population.size();j++){
             //Set the fitness for each chromasone
-            pop.population.get(j).SetFitness(v3.costsMatrix);
+            pop.population.get(j).SetFitness(v3.costsMatrix,v3.constraints);
         }
         System.out.println("-------------------------------------------------------------------" );
         pop.Sort();
@@ -169,9 +174,9 @@ public class Verkefni3 {
         for(int j = 0 ; j < pop.population.size();j++){
             for(int i = 0 ; i < pop.population.get(j).size(); i++){
 
-                System.out.print( pop.population.get(j).get(i)+"," );
+            //    System.out.print( pop.population.get(j).get(i)+"," );
             }
-            System.out.println("----Fitness:, "+pop.population.get(j).fitnessValue);
+          //  System.out.println("----Fitness:, "+pop.population.get(j).fitnessValue);
         }
         // Assignment : 2 ,2 ,1 ,1 ,0 ,1 ,1 ,1 ,2 ,1 ,2 ,1 ,0 ,0 ,1
         // 64 38 26 36 91 39 91 97 44 61 15 63 57 50 56
@@ -187,25 +192,32 @@ public class Verkefni3 {
                  newPop.Add(pop.population.get(i));
              }
              while(newPop.population.size() < v3.popSize) {
-
                  Chromasome parent1 = v3.selection.selectParent();
                  Chromasome parent2 = v3.selection.selectParent();
                  Chromasome child1 = new Chromasome(parent1.size());
                  Chromasome child2 = new Chromasome(parent1.size());
-                 child1.SetFitness(v3.costsMatrix);
-                 child2.SetFitness(v3.costsMatrix);
+
                  v3.crossover.crossover(parent1, parent2, child1, child2);
-                 v3.mutate.mutate(child1);
-                 v3.mutate.mutate(child2);
+                 v3.mutate.mutate(child1,v3.noAgents);
+                 v3.mutate.mutate(child2,v3.noAgents);
+                 child1.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                 child2.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
                 // child1.Evaluate();//evaluate(problem);
                 // child2.Evaluate();//evaluate(problem);
-                // if(child1.Repair(problem)) {
-                //     child1.evaluate(problem);
-                // }
-                // if(child2.Repair(problem)) {
-               //      child2.evaluate(problem);
-                // }
-                 if(child1.compareTo(child2) < 0) {
+
+
+                 if(!child1.feasable) {
+//                     child1.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                     child1.Repair(v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                 }
+                 if(!child2.feasable) {
+//                     child2.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                     child2.Repair(v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                }
+
+
+
+                 if(child1.compareTo(child2) > 0) {
                      newPop.Add(child1);
                    //  updateMetrics(child1);
                  }
@@ -217,23 +229,30 @@ public class Verkefni3 {
              }
              pop = newPop;
 
-           ArrayList<Integer> workLoad = new ArrayList<Integer>();
            System.out.println("Best :");
            System.out.println(pop.population.get(0));
            System.out.println("Fitness :" + pop.population.get(0).fitnessValue);
-           pop.population.get(0).Evaluate(workLoad, v3.noAgents, v3.resourcesMatrix, v3.constraints);
+           pop.population.get(0).Evaluate(v3.workload, v3.noAgents, v3.resourcesMatrix, v3.constraints, v3.costsMatrix);
            if(pop.population.get(0).feasable){
            System.out.println("Feasable : True" );
            }
            else{
            System.out.println("Feasable : False" );
            }
+            System.out.println();
+            System.out.print("Resource Usage :");
+            for(int p = 0 ; p < pop.population.get(0).reasourceUsage.size() ;p++){
+
+                System.out.print(pop.population.get(0).reasourceUsage.get(p)+" ");
+            }
+            System.out.println();
             System.out.println("-------------------------------------------------------------------" );
+
          }
 
         ArrayList<Integer> workLoad = new ArrayList<Integer>();
 
-        System.out.println();
+        //System.out.println();
 
  /*       for(int i = 0 ; i < pop.GetPopSize(); i++){
 

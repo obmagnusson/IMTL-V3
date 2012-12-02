@@ -18,14 +18,19 @@ public class Mutation {
     public void mutate(Chromasome chrome,int noAgents) {
         Random r = new Random();
         Random r2 = new Random();
-        int randAgent = r2.nextInt(noAgents);
         for(int i = 0; i < chrome.size(); i++) {
             if(r.nextInt(1000) <= mutateChance) {
-                if(randAgent == chrome.get(i)){
-                    randAgent+=1;
-                }
-                chrome.set(i, randAgent%noAgents);
+                chrome.set(i, r2.nextInt(noAgents));
             }
         }
     }
 }
+
+/*
+int randAgent = r2.nextInt(noAgents);
+if(randAgent == chrome.get(i)){
+    randAgent+=1;
+}
+chrome.set(i, randAgent%noAgents);
+
+*/

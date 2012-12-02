@@ -44,7 +44,7 @@ public class Chromasome {
                 penalty += this.reasourceUsage.get(d) - constraints.get(d);
             }
         }
-        fitnessValue = fitnessValue + penalty*2;
+        fitnessValue = fitnessValue + penalty*10;
 
     }
 
@@ -122,10 +122,8 @@ public class Chromasome {
                     }
                 }
             }
-
             SetFitness(costsMatrix, constraints);
             setReasourceUsage(resourcesMatrix, noAgents);
-
         }
     }
 

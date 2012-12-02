@@ -1,8 +1,10 @@
 import com.sun.org.apache.xpath.internal.SourceTree;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -15,14 +17,16 @@ import java.util.Scanner;
  */
 public class Verkefni3 {
     public ArrayList file;
+    public String filename;
     public int noAgents;
     public int noTasks;
     public static Population pop;
+    public int generations;
 
-    public int popSize = 100;
-    public int selectChance = 25;
-    public int elite = 10;
-    public int mutateChance = 10;
+    public int popSize;
+    public int selectChance;
+    public int elite;
+    public int mutateChance;
 
     public Selection selection;
     public Crossover crossover;
@@ -37,10 +41,12 @@ public class Verkefni3 {
     public int [][] costsMatrix;
 
     public Verkefni3(){
+    }
 
+    public void ParseData(String filename){
         try {
             file = new ArrayList<String>();
-            Scanner sc = new Scanner(new File("E10-100.dat"));
+            Scanner sc = new Scanner(new File(filename));
             while (sc.hasNextLine())    {
                 file.add(sc.nextLine());
             }
@@ -64,7 +70,6 @@ public class Verkefni3 {
                 dataBuffer.add((Integer.parseInt(integer)));
             }
         }
-        // System.out.println( integers[11] );
         noAgents = dataBuffer.get(0);
         noTasks = dataBuffer.get(1);
         constraints = new ArrayList<Integer>();
@@ -103,13 +108,6 @@ public class Verkefni3 {
                 costCount++;
             }
         }
-        for(int n = 0; n < noAgents ;n++){
-            System.out.println();
-            for(int m = 0; m < noTasks ;m++){
-                System.out.print(costsMatrix[n][m] + " ");
-            }
-        }
-        System.out.println();
     }
 
     public int random(int lower, int upper)
@@ -119,146 +117,107 @@ public class Verkefni3 {
         if (r < lower)return random(lower, upper);
         else return r;
     }
-    public ArrayList<Integer> Sum(int[][]  matrix, int noAgents, int noTasks){
-        int sum = 0 ;
-        ArrayList<Integer> sumMatrix = new ArrayList<Integer>();
-        for(int i = 0 ; i < noAgents ; i++){
-            for( int k = 0; k < noTasks; k++){
-                // System.out.println("Cost matrix : "+ matrix[i][k] );
-                sum += matrix[i][k];
-            }
-            sumMatrix.add(sum);
-            sum = 0;
-        }
-        return sumMatrix;
-    }
-
     public void Init(){
         workload = new ArrayList<Integer>(noAgents);
         pop = new Population(popSize);
         while(pop.GetPopSize() < popSize) {
             Chromasome chrome = new Chromasome(noTasks,noAgents);
             chrome.Evaluate(workload,noAgents,resourcesMatrix,constraints,costsMatrix);
-            // chr.randomize(problem);
-            // chr.evaluate(problem);
-            // chr.Repair(problem);
-            // chr.evaluate(problem);
-            // updateMetrics(chr);
-            if(chrome.feasable){
             pop.AddChromasome(chrome);
-            }
         }
-         selection = new Selection(selectChance);
-         crossover = new Crossover();
-         mutate = new Mutation(mutateChance);
+        selection = new Selection(selectChance);
+        crossover = new Crossover();
+        mutate = new Mutation(mutateChance);
     }
 
+    public void ReadConfig(){
+        Properties prop = new Properties();
+
+        try {
+            //load a properties file
+            prop.load(new FileInputStream("config.properties"));
+
+            //get the property value and print it out
+           this.popSize =  Integer.parseInt(prop.getProperty("popSize"));
+           this.selectChance = Integer.parseInt(prop.getProperty("selectChance"));
+           this.elite = Integer.parseInt(prop.getProperty("elite"));
+           this.mutateChance = Integer.parseInt(prop.getProperty("mutateChance"));
+           this.filename = prop.getProperty("filename");
+           this.generations = Integer.parseInt(prop.getProperty("generations"));
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+    }
 
     public static void main(String[] args) {
 
         Verkefni3 v3 = new Verkefni3();
-
+        v3.ReadConfig();
+        v3.ParseData(v3.filename);
         v3.Init();
+        int bestFitness = Integer.MAX_VALUE;
 
-        System.out.println( );
         for(int k = 0 ; k < 50000; k++){
-            System.out.println("Generation :"+ k);
-        System.out.println("Genotypes : ");
-        for(int j = 0 ; j < pop.population.size();j++){
-            //Set the fitness for each chromasone
-            pop.population.get(j).SetFitness(v3.costsMatrix,v3.constraints);
-        }
-        System.out.println("-------------------------------------------------------------------" );
-        pop.Sort();
-        //Print out current population
-        for(int j = 0 ; j < pop.population.size();j++){
-            for(int i = 0 ; i < pop.population.get(j).size(); i++){
-
-            //    System.out.print( pop.population.get(j).get(i)+"," );
+            for(int j = 0 ; j < pop.population.size();j++){
+                //Set the fitness for each chromasone
+                pop.population.get(j).SetFitness(v3.costsMatrix,v3.constraints);
             }
-          //  System.out.println("----Fitness:, "+pop.population.get(j).fitnessValue);
-        }
-        // Assignment : 2 ,2 ,1 ,1 ,0 ,1 ,1 ,1 ,2 ,1 ,2 ,1 ,0 ,0 ,1
-        // 64 38 26 36 91 39 91 97 44 61 15 63 57 50 56
-        // 25 28 27 54 58 68 20 96 75 53 49 33 73 47 43
-        // 77 50 66 21 16 38 8 39 89 95 70 104 45 41 53
+            pop.Sort();
+            Population newPop = new Population(v3.popSize);
+            v3.selection.setPopulation(pop);
+            int theElite = pop.population.size() * v3.elite / 100;
+            for(int i = 0; i < theElite; i++) {
+                newPop.Add(pop.population.get(i));
+            }
+            while(newPop.population.size() < v3.popSize) {
+                Chromasome parent1 = v3.selection.selectParent();
+                Chromasome parent2 = v3.selection.selectParent();
+                Chromasome child1 = new Chromasome(parent1.size());
+                Chromasome child2 = new Chromasome(parent1.size());
 
+                v3.crossover.crossover(parent1, parent2, child1, child2);
+                v3.mutate.mutate(child1,v3.noAgents);
+                v3.mutate.mutate(child2,v3.noAgents);
+                child1.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                child2.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
 
-           pop.Sort();
-             Population newPop = new Population(v3.popSize);
-             v3.selection.setPopulation(pop);
-             int theElite = pop.population.size() * v3.elite / 100;
-             for(int i = 0; i < theElite; i++) {
-                 newPop.Add(pop.population.get(i));
-             }
-             while(newPop.population.size() < v3.popSize) {
-                 Chromasome parent1 = v3.selection.selectParent();
-                 Chromasome parent2 = v3.selection.selectParent();
-                 Chromasome child1 = new Chromasome(parent1.size());
-                 Chromasome child2 = new Chromasome(parent1.size());
-
-                 v3.crossover.crossover(parent1, parent2, child1, child2);
-                 v3.mutate.mutate(child1,v3.noAgents);
-                 v3.mutate.mutate(child2,v3.noAgents);
-                 child1.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
-                 child2.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
-                // child1.Evaluate();//evaluate(problem);
-                // child2.Evaluate();//evaluate(problem);
-
-
-                 if(!child1.feasable) {
-//                     child1.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
-                     child1.Repair(v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
-                 }
-                 if(!child2.feasable) {
-//                     child2.Evaluate(v3.workload,v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
-                     child2.Repair(v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                if(!child1.feasable) {
+                    child1.Repair(v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
+                }
+                if(!child2.feasable) {
+                    child2.Repair(v3.noAgents,v3.resourcesMatrix,v3.constraints, v3.costsMatrix);
                 }
 
+                if(child1.compareTo(child2) > 0) {
+                    newPop.Add(child1);
+                }
+                else {
+                    newPop.Add(child2);
+                }
+            }
+            pop = newPop;
 
+            if(bestFitness > pop.population.get(0).fitnessValue || k == 1 ||  k == 49999){
+            System.out.println("Generation :"+ k);
+            System.out.println("Best :");
+            System.out.println(pop.population.get(0));
+            System.out.println("Fitness :" + pop.population.get(0).fitnessValue);
+            pop.population.get(0).Evaluate(v3.workload, v3.noAgents, v3.resourcesMatrix, v3.constraints, v3.costsMatrix);
 
-                 if(child1.compareTo(child2) > 0) {
-                     newPop.Add(child1);
-                   //  updateMetrics(child1);
-                 }
-                 else {
-                     newPop.Add(child2);
-                   //  updateMetrics(child2);
+            if(pop.population.get(0).feasable){  System.out.println("Feasable : True" );  }
+            else{  System.out.println("Feasable : False" ); }
 
-                 }
-             }
-             pop = newPop;
-
-           System.out.println("Best :");
-           System.out.println(pop.population.get(0));
-           System.out.println("Fitness :" + pop.population.get(0).fitnessValue);
-           pop.population.get(0).Evaluate(v3.workload, v3.noAgents, v3.resourcesMatrix, v3.constraints, v3.costsMatrix);
-           if(pop.population.get(0).feasable){
-           System.out.println("Feasable : True" );
-           }
-           else{
-           System.out.println("Feasable : False" );
-           }
             System.out.println();
             System.out.print("Resource Usage :");
             for(int p = 0 ; p < pop.population.get(0).reasourceUsage.size() ;p++){
-
                 System.out.print(pop.population.get(0).reasourceUsage.get(p)+" ");
             }
             System.out.println();
             System.out.println("-------------------------------------------------------------------" );
-
-         }
-
-        ArrayList<Integer> workLoad = new ArrayList<Integer>();
-
-        //System.out.println();
-
- /*       for(int i = 0 ; i < pop.GetPopSize(); i++){
-
-            System.out.println("Population nr:" +i);
-            pop.population.get(i).Evaluate(workLoad ,v3.noAgents,v3.resourcesMatrix,v3.constraints);
-
-        }*/
+            bestFitness =  pop.population.get(0).fitnessValue;
+            }
+        }
     }
 }

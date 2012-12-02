@@ -159,7 +159,8 @@ public class Verkefni3 {
         v3.Init();
         int bestFitness = Integer.MAX_VALUE;
 
-        for(int k = 0 ; k < 50000; k++){
+
+        for(int k = 0 ; k < v3.generations; k++){
             for(int j = 0 ; j < pop.population.size();j++){
                 //Set the fitness for each chromasone
                 pop.population.get(j).SetFitness(v3.costsMatrix,v3.constraints);
